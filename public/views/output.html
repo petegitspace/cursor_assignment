@@ -1,0 +1,146 @@
+<html>
+    <head>
+        <title>Output Page</title>
+
+        <script src="../public/js/jquery-3.5.1.js"></script>
+
+        <link rel="stylesheet" href="../public/css/main.css">
+        <style>
+            .cursor-img{
+                top:0;
+                left:0;
+                width: 32px;
+                height: 25px;
+                margin: 0px;
+                padding: 0px;
+                position: absolute;
+            }
+        </style>
+    </head>
+    <body>
+        <img id="cursorImg" class="cursor-img" src="/public/images/cursor.png" />
+        <div class="center">
+            <button class="center-button" id="playLive">Play Live</button>
+            <button class="center-button" id="playRecording">Play Recording</button>
+        </div>
+
+        <div class="center-box"></div>
+
+
+        <script>
+            (function() {
+                var ws;
+
+                var temp = {};
+                var cursorx = 0; 
+                var cursory = 0;
+                
+                var speed = 10;// setInterval repeats every X ms
+                //temp.message = {"x":0,"y":0};
+
+                var timeout;
+
+                var cursorImg = document.getElementById("cursorImg");
+                var playLiveBtn = document.getElementById("playLive");
+                var playRecordingBtn = document.getElementById("playRecording");
+
+                var startCursor;
+                var startLiveBtn = false;
+
+                function showMessage(message) {
+                    console.log(message);
+                }
+
+                function setImgCursorCoordinates(data){
+                    temp = JSON.parse(data);
+                    if(temp.message && typeof temp.message != 'undefined'){
+                        cursorx = temp.message.x;
+                        cursory = temp.message.y;
+                        
+                    }
+                }
+
+                function init() {
+                    if (ws) {
+                        ws.onerror = ws.onopen = ws.onclose = null;
+                        ws.close();
+                    }
+                    var HOST = location.origin.replace(/^http/, 'ws')
+                    var ws = new WebSocket(HOST);
+
+                    //ws = new WebSocket('ws://hidden-taiga-62543.herokuapp.com:5000');
+                    ws.onopen = () => {
+                        console.log('Connection opened!');
+                    }
+                    //ws.onmessage = ({ data }) => showMessage(data);
+                    ws.onmessage = ({ data }) => setImgCursorCoordinates(data);
+                    ws.onclose = function() {
+                        ws = null;
+                    }
+                }
+
+                init();
+
+                function startMovingCursor() {
+                    alert("Live Cursor Started");
+                    
+                    startCursor = setInterval(function(){
+                        cursorImg.style.left = cursorx + "px" ;
+                        cursorImg.style.top = cursory + "px" ;
+                    }, speed);// setInterval repeats every X ms
+
+                }
+
+                function stopMovingCursor() {
+                    clearInterval(startCursor);
+                    alert("Live Cursor Stopped");
+                }
+
+                playLiveBtn.onclick = function(){
+                    if(startLiveBtn === false){
+                        startLiveBtn = true;
+                        startMovingCursor();
+                    }
+                    else{
+                        stopMovingCursor();
+                        startLiveBtn = false;
+                    }
+                }
+                
+                playRecordingBtn.onclick = function(){
+                    if(startLiveBtn === true){
+                        stopMovingCursor();
+                        startLiveBtn = false;
+                    }
+                    getRecord();
+                }
+
+                function getRecord(){
+                    //var data = JSON.stringify(record);
+                    //url - http://localhost:5000/sendDBData
+                    //url - https://hidden-taiga-62543.herokuapp.com/sendDBData
+					$.ajax({
+                        type: 'POST',
+                        json: true,
+				        contentType: 'application/json',
+                        url: 'https://hidden-taiga-62543.herokuapp.com/sendDBData',						
+                        success: function(data) {
+                            
+                            for(var i = 0; i < data.results.length; i++){
+                                (function(i){
+                                    setTimeout(function(){
+                                        cursorImg.style.left = data.results[i].x + "px";
+                                        cursorImg.style.top = data.results[i].y + "px";
+                                    }, speed * (i + 1));
+                                })(i);
+                            }
+                        }
+                    });
+                }
+
+                
+
+            })();
+        </script>
+    </body>
+</html>

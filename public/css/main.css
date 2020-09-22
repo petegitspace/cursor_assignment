@@ -1,0 +1,30 @@
+body{
+    background-color: #F5F5F5;
+    margin: 0;
+    padding: 0;
+}
+.center-box{
+    width: 800px;
+    height:700px;
+    margin: 0 auto;
+    padding: 0px;
+    border: 2px solid #333;
+    background-color: #FFF;
+    /*cursor: url(/public/images/cursor.png), auto;*/
+}
+
+.center{
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    padding: 10px;
+    padding-top: 40px;
+    margin: 0;
+}
+.center-button{
+    margin: 0px;
+    padding: 10px 40px;
+    background-color: #FFF;
+    color: black;
+    border: 2px solid #555555;
+}

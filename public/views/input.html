@@ -1,0 +1,201 @@
+<html>
+    <head>
+        <title>Input Page</title>
+
+        <script src="../public/js/jquery-3.5.1.js"></script>
+
+        <link rel="stylesheet" href="../public/css/main.css">
+        <style>
+            html{
+                cursor: url(/public/images/cursor.png), auto;
+                height: 100%;
+            }
+        </style>
+    </head>
+    <body>
+
+        <div class="center">
+            <button id="start" class="center-button">Start</button>
+            <button id="stop" class="center-button">Stop</button>
+            <button id="record" class="center-button">Record</button>
+        </div>
+
+        <div class="center-box"></div>
+        
+
+        <script>
+            (function() {
+                
+                var ws;
+                var startRecord;
+                var pos;
+
+                var speed = 10;// setInterval repeats every X ms
+
+                function showMessage(message) {
+                    //console.log(message);
+                }
+                function init() {
+                    if (ws) {
+                        ws.onerror = ws.onopen = ws.onclose = null;
+                        ws.close();
+                    }
+                    var HOST = location.origin.replace(/^http/, 'ws')
+                    ws = new WebSocket(HOST);
+
+                    //ws = new WebSocket('ws://hidden-taiga-62543.herokuapp.com:5000');
+                    ws.onopen = () => {
+                        //console.log('Connection opened!');
+                    }
+                    ws.onmessage = ({ data }) => showMessage(data);
+                    ws.onclose = function() {
+                        ws = null;
+                    }
+                }
+
+                var mousePos;
+
+                document.onmousemove = handleMouseMove;
+                
+                function handleMouseMove(event) {
+                    var dot, eventDoc, doc, body, pageX, pageY;
+
+                    event = event || window.event; // IE-ism
+
+                    // If pageX/Y aren't available and clientX/Y are,
+                    // calculate pageX/Y - logic taken from jQuery.
+                    // (This is to support old IE)
+                    if (event.pageX == null && event.clientX != null) {
+                        eventDoc = (event.target && event.target.ownerDocument) || document;
+                        doc = eventDoc.documentElement;
+                        body = eventDoc.body;
+
+                        event.pageX = event.clientX +
+                        (doc && doc.scrollLeft || body && body.scrollLeft || 0) -
+                        (doc && doc.clientLeft || body && body.clientLeft || 0);
+                        event.pageY = event.clientY +
+                        (doc && doc.scrollTop  || body && body.scrollTop  || 0) -
+                        (doc && doc.clientTop  || body && body.clientTop  || 0 );
+                    }
+
+                    mousePos = {
+                        x: event.pageX,
+                        y: event.pageY
+                    };
+                }
+                function getMousePosition() {
+                    pos = JSON.stringify(mousePos);
+                    if (!pos) {
+                        // We haven't seen any movement yet
+                    }
+                    else {
+                        //Use pos.x and pos.y
+                        ws.send(pos);
+                        
+                    }
+                }
+
+                function startSending() {
+                    alert("started Live Broadcast");
+                    var pos = {};
+                    startRecord = setInterval(function(){ 
+                         getMousePosition();
+                    }, speed);// setInterval repeats every X ms
+
+                }
+
+                function stopSending() {
+                    clearInterval(startRecord);
+                    alert("Stopped Live Broadcast");
+                }
+
+
+                function send() {
+                    if (!ws) {
+                        showMessage("No WebSocket connection :(");
+                        return ;
+                    }
+                    
+                }   
+
+                var startBtn = document.getElementById("start");
+                var stopBtn = document.getElementById("stop");
+                var recordBtn = document.getElementById("record");
+
+                startBtn.onclick = function(){
+                    init();
+                    startSending();
+                }
+
+                stopBtn.onclick = function(){
+                    stopSending();
+                }
+
+
+
+                //db
+                var dbRecordingInterval;
+                var dbRecord = [];
+                var startRecording = false;
+
+                function startDBRecording() {
+                    //alert("started Live Broadcast");
+                    dbRecord = [];
+                    dbRecordingInterval = setInterval(function(){ 
+                        dbRecord.push(mousePos);
+                    }, speed);// setInterval repeats every X ms
+
+                }
+
+                function stopDBRecording() {
+                    postRecord(dbRecord);
+                    clearInterval(dbRecordingInterval);
+                }
+
+                recordBtn.onclick = function(){
+                    if(startRecording === false){
+                        startRecording = true;
+                        startDBRecording();
+                        alert("started Recording, click 'record' again to stop recording and save into database.");
+                    }
+                    else{
+                        stopDBRecording();
+                        startRecording = false;
+                        alert("stopped Recording");
+
+                        
+                        
+                    }
+                }
+
+
+                init();
+                send();
+
+
+
+                function postRecord(record){
+                    
+                    var data = JSON.stringify(record);
+                    //url - http://localhost:5000/recordLocation
+                    //url - https://hidden-taiga-62543.herokuapp.com/recordLocation
+					$.ajax({
+                        type: 'POST',
+                        json: true,
+						data: data,
+				        contentType: 'application/json',
+                        url: 'https://hidden-taiga-62543.herokuapp.com/recordLocation',						
+                        success: function(data) {
+                            //console.log('success');
+                        }
+                    });
+                }
+                
+
+
+
+
+            })();
+        </script>
+    </body>
+</html>
